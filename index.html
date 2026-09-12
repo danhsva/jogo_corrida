@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo de Corrida Arcade</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle, #1a1a2e 0%, #0f0f1b 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #ff3366;
+      text-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+    }
+
+    .game-container {
+      position: relative;
+      border: 4px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 51, 102, 0.2);
+    }
+
+    canvas {
+      display: block;
+      background: #333;
+    }
+
+    /* Placar no topo */
+    .hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-shadow: 1px 1px 4px #000;
+      z-index: 5;
+    }
+
+    /* Telas de Início e Game Over */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 15, 27, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #fff;
+      background: #ff3366;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+      transition: transform 0.15s, background 0.15s;
+    }
+
+    .btn:hover {
+      background: #e62254;
+      transform: scale(1.05);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Controles para Celular */
+    .mobile-controls {
+      margin-top: 15px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .ctrl-btn {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: #252542;
+      border: 2px solid #ff3366;
+      color: white;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    .instructions {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Turbo Racer</h1>
+
+  <div class="game-container">
+    <!-- Placar -->
+    <div class="hud">
+      <span id="score">Pontos: 0</span>
+      <span id="speed">Velocidade: 0 km/h</span>
+    </div>
+
+    <!-- Tela Inicial / Game Over -->
+    <div class="overlay" id="startScreen">
+      <h2>Pronto para Correr?</h2>
+      <p>Desvie dos outros carros!</p>
+      <button class="btn" id="startBtn">Começar</button>
+    </div>
+
+    <div class="overlay hidden" id="gameOverScreen">
+      <h2 style="color: #ff3366;">BATEU!</h2>
+      <p id="finalScore">Pontos: 0</p>
+      <button class="btn" id="restartBtn">Jogar de Novo</button>
+    </div>
+
+    <!-- Tela do Jogo -->
+    <canvas id="gameCanvas" width="380" height="560"></canvas>
+  </div>
+
+  <!-- Controles Mobile -->
+  <div class="mobile-controls">
+    <button class="ctrl-btn" id="btnLeft">◀</button>
+    <button class="ctrl-btn" id="btnRight">▶</button>
+  </div>
+
+  <div class="instructions">
+    Use as teclas <b>← / →</b> (ou <b>A / D</b>) para mover.
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreDisplay = document.getElementById('score');
+    const speedDisplay = document.getElementById('speed');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScore = document.getElementById('finalScore');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+
+    // Dimensões da Pista e Carros
+    const ROAD_WIDTH = 260;
+    const ROAD_LEFT = (canvas.width - ROAD_WIDTH) / 2;
+    const CAR_WIDTH = 42;
+    const CAR_HEIGHT = 70;
+
+    let score = 0;
+    let gameSpeed = 5;
+    let isGameOver = false;
+    let isPlaying = false;
+    let roadOffset = 0;
+
+    // Estado do Jogador
+    const player = {
+      x: canvas.width / 2 - CAR_WIDTH / 2,
+      y: canvas.height - CAR_HEIGHT - 30,
+      width: CAR_WIDTH,
+      height: CAR_HEIGHT,
+      speedX: 5,
+      movingLeft: false,
+      movingRight: false,
+      color: '#00f0ff'
+    };
+
+    // Obstáculos
+    let traffic = [];
+    const trafficColors = ['#ff3366', '#ffaa00', '#00ff88', '#9900ff'];
+
+    // Entrada por Teclado
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.movingLeft = true;
+      if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.movingRight = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.movingLeft = false;
+      if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.movingRight = false;
+    });
+
+    // Controles Touch / Botões Mobile
+    const addHoldEvent = (btn, dir) => {
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); player[dir] = true; });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); player[dir] = false; });
+      btn.addEventListener('mousedown', () => { player[dir] = true; });
+      btn.addEventListener('mouseup', () => { player[dir] = false; });
+      btn.addEventListener('mouseleave', () => { player[dir] = false; });
+    };
+
+    addHoldEvent(btnLeft, 'movingLeft');
+    addHoldEvent(btnRight, 'movingRight');
+
+    // Iniciar / Reiniciar Jogo
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    function startGame() {
+      score = 0;
+      gameSpeed = 5;
+      traffic = [];
+      player.x = canvas.width / 2 - CAR_WIDTH / 2;
+      isGameOver = false;
+      isPlaying = true;
+
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Desenhar um Carro Estilizado
+    function drawCar(x, y, width, height, color, isPlayer = false) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Rodas
+      ctx.fillStyle = '#111';
+      ctx.fillRect(-3, 8, 6, 14);
+      ctx.fillRect(width - 3, 8, 6, 14);
+      ctx.fillRect(-3, height - 22, 6, 14);
+      ctx.fillRect(width - 3, height - 22, 6, 14);
+
+      // Chassi
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, width, height, 8);
+      ctx.fill();
+
+      // Vidro Dianteiro
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.roundRect(6, 15, width - 12, 14, 3);
+      ctx.fill();
+
+      // Teto / Vidro Traseiro
+      ctx.fillRect(8, 35, width - 16, 10);
+
+      // Faróis
+      ctx.fillStyle = isPlayer ? '#ffff55' : '#ff4444';
+      ctx.fillRect(5, isPlayer ? 2 : height - 4, 8, 3);
+      ctx.fillRect(width - 13, isPlayer ? 2 : height - 4, 8, 3);
+
+      ctx.restore();
+    }
+
+    // Gerador de Carros Inimigos
+    let spawnTimer = 0;
+    function handleTraffic() {
+      spawnTimer++;
+      if (spawnTimer > 60 - Math.min(gameSpeed * 2, 35)) {
+        spawnTimer = 0;
+        const laneX = ROAD_LEFT + 10 + Math.random() * (ROAD_WIDTH - CAR_WIDTH - 20);
+        traffic.push({
+          x: laneX,
+          y: -CAR_HEIGHT,
+          width: CAR_WIDTH,
+          height: CAR_HEIGHT,
+          speed: gameSpeed * 0.5 + Math.random() * 2,
+          color: trafficColors[Math.floor(Math.random() * trafficColors.length)]
+        });
+      }
+
+      for (let i = traffic.length - 1; i >= 0; i--) {
+        const car = traffic[i];
+        car.y += gameSpeed - car.speed * 0.3;
+
+        drawCar(car.x, car.y, car.width, car.height, car.color);
+
+        // Checagem de Colisão (Bounding Box)
+        if (
+          player.x < car.x + car.width - 5 &&
+          player.x + player.width - 5 > car.x &&
+          player.y < car.y + car.height - 5 &&
+          player.y + player.height - 5 > car.y
+        ) {
+          endGame();
+        }
+
+        // Remove carros que saíram da tela
+        if (car.y > canvas.height) {
+          traffic.splice(i, 1);
+          score += 10;
+        }
+      }
+    }
+
+    // Desenha a Pista de Corrida
+    function drawRoad() {
+      // Grama / Laterais
+      ctx.fillStyle = '#1c6827';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Asfalto
+      ctx.fillStyle = '#2b2b2b';
+      ctx.fillRect(ROAD_LEFT, 0, ROAD_WIDTH, canvas.height);
+
+      // Linhas Laterais
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(ROAD_LEFT - 4, 0, 4, canvas.height);
+      ctx.fillRect(ROAD_LEFT + ROAD_WIDTH, 0, 4, canvas.height);
+
+      // Faixas Centrais Animadas
+      roadOffset = (roadOffset + gameSpeed) % 40;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -roadOffset;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Finaliza o jogo
+    function endGame() {
+      isGameOver = true;
+      isPlaying = false;
+      finalScore.textContent = `Pontuação: ${score}`;
+      gameOverScreen.classList.remove('hidden');
+    }
+
+    // Loop Principal
+    function gameLoop() {
+      if (!isPlaying) return;
+
+      // Limpar tela
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Desenhar Cenário
+      drawRoad();
+
+      // Movimentação do Jogador
+      if (player.movingLeft && player.x > ROAD_LEFT + 5) {
+        player.x -= player.speedX;
+      }
+      if (player.movingRight && player.x < ROAD_LEFT + ROAD_WIDTH - CAR_WIDTH - 5) {
+        player.x += player.speedX;
+      }
+
+      // Desenhar Jogador
+      drawCar(player.x, player.y, player.width, player.height, player.color, true);
+
+      // Tráfego e Colisão
+      handleTraffic();
+
+      // Aumentar dificuldade gradualmente
+      gameSpeed += 0.0015;
+      score += 0.1;
+
+      // Atualizar HUD
+      scoreDisplay.textContent = `Pontos: ${Math.floor(score)}`;
+      speedDisplay.textContent = `Velocidade: ${Math.floor(gameSpeed * 15)} km/h`;
+
+      requestAnimationFrame(gameLoop);
+    }
+  </script>
+</body>
+</html>
