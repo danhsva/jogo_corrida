@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo de Corrida Arcade</title>
+  <title>Turbo Racer - Edição Especial do Levi</title>
   <style>
     * {
       box-sizing: border-box;
@@ -25,20 +25,20 @@
     }
 
     h1 {
-      margin-bottom: 8px;
-      font-size: 1.8rem;
+      margin-bottom: 6px;
+      font-size: 1.6rem;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: #ff3366;
-      text-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+      color: #ffd700;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
     }
 
     .game-container {
       position: relative;
-      border: 4px solid #333;
-      border-radius: 12px;
+      border: 4px solid #ffd700;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 51, 102, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 215, 0, 0.3);
     }
 
     canvas {
@@ -46,30 +46,40 @@
       background: #333;
     }
 
-    /* Placar no topo */
+    /* HUD / Placar */
     .hud {
       position: absolute;
-      top: 15px;
-      left: 15px;
-      right: 15px;
+      top: 10px;
+      left: 12px;
+      right: 12px;
       display: flex;
       justify-content: space-between;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       font-weight: bold;
       text-shadow: 1px 1px 4px #000;
       z-index: 5;
+    }
+
+    .pilot-tag {
+      color: #00f0ff;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid #00f0ff;
     }
 
     /* Telas de Início e Game Over */
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 15, 27, 0.85);
+      background: rgba(15, 15, 27, 0.93);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 15px;
+      padding: 20px;
+      text-align: center;
+      gap: 12px;
       z-index: 10;
     }
 
@@ -77,33 +87,66 @@
       display: none;
     }
 
+    /* Foto do Levi */
+    .photo-container {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      border: 4px solid #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+      overflow: hidden;
+      animation: pulse-glow 2s infinite alternate;
+    }
+
+    .photo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+    }
+
+    @keyframes pulse-glow {
+      0% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
+      100% { transform: scale(1.04); box-shadow: 0 0 30px rgba(255, 215, 0, 1); }
+    }
+
+    .tribute-title {
+      font-size: 1.4rem;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    }
+
+    .tribute-text {
+      font-size: 0.95rem;
+      color: #e0e0ff;
+      line-height: 1.4;
+      max-width: 300px;
+    }
+
     .btn {
-      padding: 12px 28px;
+      padding: 12px 30px;
       font-size: 1.1rem;
       font-weight: bold;
-      color: #fff;
-      background: #ff3366;
+      color: #111;
+      background: #ffd700;
       border: none;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+      box-shadow: 0 5px 18px rgba(255, 215, 0, 0.5);
       transition: transform 0.15s, background 0.15s;
     }
 
     .btn:hover {
-      background: #e62254;
+      background: #ffea6b;
       transform: scale(1.05);
     }
 
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    /* Controles para Celular */
+    /* Controles Mobile */
     .mobile-controls {
-      margin-top: 15px;
+      margin-top: 12px;
       display: flex;
-      gap: 20px;
+      gap: 25px;
     }
 
     .ctrl-btn {
@@ -111,9 +154,9 @@
       height: 65px;
       border-radius: 50%;
       background: #252542;
-      border: 2px solid #ff3366;
-      color: white;
-      font-size: 1.5rem;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      font-size: 1.6rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -121,48 +164,55 @@
     }
 
     .instructions {
-      margin-top: 10px;
+      margin-top: 8px;
       font-size: 0.85rem;
-      color: #888;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
 
-  <h1>Turbo Racer</h1>
+  <h1>🏆 Pista do Levi 🏎️</h1>
 
   <div class="game-container">
-    <!-- Placar -->
+    <!-- Placar e Piloto -->
     <div class="hud">
+      <span class="pilot-tag">Piloto: Levi ⭐</span>
       <span id="score">Pontos: 0</span>
-      <span id="speed">Velocidade: 0 km/h</span>
     </div>
 
-    <!-- Tela Inicial / Game Over -->
+    <!-- Tela Inicial de Homenagem -->
     <div class="overlay" id="startScreen">
-      <h2>Pronto para Correr?</h2>
-      <p>Desvie dos outros carros!</p>
-      <button class="btn" id="startBtn">Começar</button>
+      <div class="photo-container">
+        <img src="levi.jpg" alt="Levi" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>'"/>
+      </div>
+      <h2 class="tribute-title">PARABÉNS, LEVI! 🎉</h2>
+      <p class="tribute-text">
+        Você é o nosso maior campeão e o <b>piloto número 1</b>! Desvie dos carros e acelere fundo na sua própria pista!
+      </p>
+      <button class="btn" id="startBtn">Acelerar, Levi! 🚀</button>
     </div>
 
+    <!-- Tela de Game Over -->
     <div class="overlay hidden" id="gameOverScreen">
-      <h2 style="color: #ff3366;">BATEU!</h2>
-      <p id="finalScore">Pontos: 0</p>
-      <button class="btn" id="restartBtn">Jogar de Novo</button>
+      <h2 style="color: #ff3366; font-size: 1.6rem;">FIM DA CORRIDA!</h2>
+      <p id="finalScore" style="font-size: 1.2rem; color: #ffd700;">Pontos: 0</p>
+      <p style="color: #aaa; font-size: 0.9rem;">Você mandou muito bem, Levi!</p>
+      <button class="btn" id="restartBtn">Tentar de Novo 🔄</button>
     </div>
 
-    <!-- Tela do Jogo -->
-    <canvas id="gameCanvas" width="380" height="560"></canvas>
+    <!-- Canvas do Jogo -->
+    <canvas id="gameCanvas" width="360" height="520"></canvas>
   </div>
 
-  <!-- Controles Mobile -->
+  <!-- Controles para Celular -->
   <div class="mobile-controls">
     <button class="ctrl-btn" id="btnLeft">◀</button>
     <button class="ctrl-btn" id="btnRight">▶</button>
   </div>
 
   <div class="instructions">
-    Use as teclas <b>← / →</b> (ou <b>A / D</b>) para mover.
+    Use as setas <b>← / →</b> ou <b>A / D</b> para guiar.
   </div>
 
   <script>
@@ -170,7 +220,6 @@
     const ctx = canvas.getContext('2d');
 
     const scoreDisplay = document.getElementById('score');
-    const speedDisplay = document.getElementById('speed');
     const startScreen = document.getElementById('startScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScore = document.getElementById('finalScore');
@@ -180,35 +229,30 @@
     const btnLeft = document.getElementById('btnLeft');
     const btnRight = document.getElementById('btnRight');
 
-    // Dimensões da Pista e Carros
-    const ROAD_WIDTH = 260;
+    const ROAD_WIDTH = 250;
     const ROAD_LEFT = (canvas.width - ROAD_WIDTH) / 2;
-    const CAR_WIDTH = 42;
-    const CAR_HEIGHT = 70;
+    const CAR_WIDTH = 40;
+    const CAR_HEIGHT = 68;
 
     let score = 0;
     let gameSpeed = 5;
-    let isGameOver = false;
     let isPlaying = false;
     let roadOffset = 0;
 
-    // Estado do Jogador
     const player = {
       x: canvas.width / 2 - CAR_WIDTH / 2,
-      y: canvas.height - CAR_HEIGHT - 30,
+      y: canvas.height - CAR_HEIGHT - 25,
       width: CAR_WIDTH,
       height: CAR_HEIGHT,
-      speedX: 5,
+      speedX: 5.5,
       movingLeft: false,
       movingRight: false,
       color: '#00f0ff'
     };
 
-    // Obstáculos
     let traffic = [];
-    const trafficColors = ['#ff3366', '#ffaa00', '#00ff88', '#9900ff'];
+    const trafficColors = ['#ff3366', '#ffaa00', '#00ff88', '#b533ff'];
 
-    // Entrada por Teclado
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.movingLeft = true;
       if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.movingRight = true;
@@ -219,7 +263,6 @@
       if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.movingRight = false;
     });
 
-    // Controles Touch / Botões Mobile
     const addHoldEvent = (btn, dir) => {
       btn.addEventListener('touchstart', (e) => { e.preventDefault(); player[dir] = true; });
       btn.addEventListener('touchend', (e) => { e.preventDefault(); player[dir] = false; });
@@ -231,16 +274,14 @@
     addHoldEvent(btnLeft, 'movingLeft');
     addHoldEvent(btnRight, 'movingRight');
 
-    // Iniciar / Reiniciar Jogo
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
 
     function startGame() {
       score = 0;
-      gameSpeed = 5;
+      gameSpeed = 5.2;
       traffic = [];
       player.x = canvas.width / 2 - CAR_WIDTH / 2;
-      isGameOver = false;
       isPlaying = true;
 
       startScreen.classList.add('hidden');
@@ -249,7 +290,6 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Desenhar um Carro Estilizado
     function drawCar(x, y, width, height, color, isPlayer = false) {
       ctx.save();
       ctx.translate(x, y);
@@ -261,53 +301,55 @@
       ctx.fillRect(-3, height - 22, 6, 14);
       ctx.fillRect(width - 3, height - 22, 6, 14);
 
-      // Chassi
+      // Carroceria
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.roundRect(0, 0, width, height, 8);
       ctx.fill();
 
-      // Vidro Dianteiro
+      // Faixa esportiva dourada no carro do Levi
+      if (isPlayer) {
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(width / 2 - 3, 0, 6, height);
+      }
+
+      // Vidro
       ctx.fillStyle = '#222';
       ctx.beginPath();
-      ctx.roundRect(6, 15, width - 12, 14, 3);
+      ctx.roundRect(5, 14, width - 10, 14, 3);
       ctx.fill();
 
-      // Teto / Vidro Traseiro
-      ctx.fillRect(8, 35, width - 16, 10);
-
       // Faróis
-      ctx.fillStyle = isPlayer ? '#ffff55' : '#ff4444';
-      ctx.fillRect(5, isPlayer ? 2 : height - 4, 8, 3);
-      ctx.fillRect(width - 13, isPlayer ? 2 : height - 4, 8, 3);
+      ctx.fillStyle = isPlayer ? '#ffff77' : '#ff3333';
+      ctx.fillRect(5, isPlayer ? 2 : height - 4, 7, 3);
+      ctx.fillRect(width - 12, isPlayer ? 2 : height - 4, 7, 3);
 
       ctx.restore();
     }
 
-    // Gerador de Carros Inimigos
     let spawnTimer = 0;
     function handleTraffic() {
       spawnTimer++;
-      if (spawnTimer > 60 - Math.min(gameSpeed * 2, 35)) {
+      if (spawnTimer > 65 - Math.min(gameSpeed * 2, 35)) {
         spawnTimer = 0;
-        const laneX = ROAD_LEFT + 10 + Math.random() * (ROAD_WIDTH - CAR_WIDTH - 20);
+        const laneX = ROAD_LEFT + 8 + Math.random() * (ROAD_WIDTH - CAR_WIDTH - 16);
         traffic.push({
           x: laneX,
           y: -CAR_HEIGHT,
           width: CAR_WIDTH,
           height: CAR_HEIGHT,
-          speed: gameSpeed * 0.5 + Math.random() * 2,
+          speed: gameSpeed * 0.45 + Math.random() * 2,
           color: trafficColors[Math.floor(Math.random() * trafficColors.length)]
         });
       }
 
       for (let i = traffic.length - 1; i >= 0; i--) {
         const car = traffic[i];
-        car.y += gameSpeed - car.speed * 0.3;
+        car.y += gameSpeed - car.speed * 0.25;
 
         drawCar(car.x, car.y, car.width, car.height, car.color);
 
-        // Checagem de Colisão (Bounding Box)
+        // Colisão
         if (
           player.x < car.x + car.width - 5 &&
           player.x + player.width - 5 > car.x &&
@@ -317,30 +359,28 @@
           endGame();
         }
 
-        // Remove carros que saíram da tela
         if (car.y > canvas.height) {
           traffic.splice(i, 1);
-          score += 10;
+          score += 15;
         }
       }
     }
 
-    // Desenha a Pista de Corrida
     function drawRoad() {
-      // Grama / Laterais
-      ctx.fillStyle = '#1c6827';
+      // Grama
+      ctx.fillStyle = '#1e5e2e';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Asfalto
-      ctx.fillStyle = '#2b2b2b';
+      ctx.fillStyle = '#282828';
       ctx.fillRect(ROAD_LEFT, 0, ROAD_WIDTH, canvas.height);
 
-      // Linhas Laterais
-      ctx.fillStyle = '#fff';
+      // Faixas Laterais Douradas
+      ctx.fillStyle = '#ffd700';
       ctx.fillRect(ROAD_LEFT - 4, 0, 4, canvas.height);
       ctx.fillRect(ROAD_LEFT + ROAD_WIDTH, 0, 4, canvas.height);
 
-      // Faixas Centrais Animadas
+      // Linha Central
       roadOffset = (roadOffset + gameSpeed) % 40;
       ctx.setLineDash([20, 20]);
       ctx.lineDashOffset = -roadOffset;
@@ -354,25 +394,19 @@
       ctx.setLineDash([]);
     }
 
-    // Finaliza o jogo
     function endGame() {
-      isGameOver = true;
       isPlaying = false;
-      finalScore.textContent = `Pontuação: ${score}`;
+      finalScore.textContent = `Pontuação: ${Math.floor(score)}`;
       gameOverScreen.classList.remove('hidden');
     }
 
-    // Loop Principal
     function gameLoop() {
       if (!isPlaying) return;
 
-      // Limpar tela
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Desenhar Cenário
       drawRoad();
 
-      // Movimentação do Jogador
       if (player.movingLeft && player.x > ROAD_LEFT + 5) {
         player.x -= player.speedX;
       }
@@ -380,19 +414,14 @@
         player.x += player.speedX;
       }
 
-      // Desenhar Jogador
       drawCar(player.x, player.y, player.width, player.height, player.color, true);
 
-      // Tráfego e Colisão
       handleTraffic();
 
-      // Aumentar dificuldade gradualmente
-      gameSpeed += 0.0015;
-      score += 0.1;
+      gameSpeed += 0.0012;
+      score += 0.08;
 
-      // Atualizar HUD
       scoreDisplay.textContent = `Pontos: ${Math.floor(score)}`;
-      speedDisplay.textContent = `Velocidade: ${Math.floor(gameSpeed * 15)} km/h`;
 
       requestAnimationFrame(gameLoop);
     }
